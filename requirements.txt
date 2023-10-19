@@ -1,0 +1,7 @@
+accelerate
+datasets
+evaluate
+ipywidgets
+numpy
+torch
+transformers
