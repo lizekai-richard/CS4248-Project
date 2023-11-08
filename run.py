@@ -4,7 +4,7 @@ import random
 import torch
 import json
 import argparse
-from dataset import SQuADDataset
+from dataset import SQuADDataset, MCQDataset
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AutoModelForMultipleChoice
 
@@ -32,6 +32,18 @@ def reformat_dataset(data):
                 })
     return reformatted_data
 
+# data is a list of dicts
+# predictions is a dict with model name as key and corresponding list of predictions as value
+# assumes index correspondance
+# outputs a list of dicts
+def add_predictions_to_dataset(data, predictions):
+    model_names = predictions.keys()
+    qna_dataset = []
+    for i, item in enumerate(data):
+        for name in model_names:
+            item[name] = predictions[name][i]
+        qna_dataset.append(item)
+    return qna_dataset
 
 @torch.inference_mode()
 def single_model_generate_predictions(tokenizers, models, batch):
@@ -56,9 +68,17 @@ def single_model_generate_predictions(tokenizers, models, batch):
     return predictions
 
 
+#need dataset for decoding answers
 @torch.inference_mode()
-def ensemble_model_generate_predictions(tokenizer, model, data_loader):
+def ensemble_model_generate_predictions(model, data_loader, dataset):
+    prediction_labels = []
+    for step, data in enumerate(data_loader, 0):
+        input_ids, attention_mask = data['input_ids'], data['attention_mask']
 
+        outputs = model(input_ids, attention_mask)
+        prediction_labels.extend(outputs.logits.argmax(axis=1).tolist())
+
+    return dataset.decode_answer(prediction_labels)
 
 
 if __name__ == '__main__':
@@ -99,5 +119,25 @@ if __name__ == '__main__':
         'albert': AutoModelForQuestionAnswering.from_pretrained(args.albert_path),
         'electra': AutoModelForQuestionAnswering.from_pretrained(args.electra_path)
     }
+
+    # Step 1: generate predictions for single models:
+    # predictions = ...
+
+    # Step 2: add the predictions to the corresponding dataset:
+    # mcq_data = add_predictions_to_dataset(<corresponding_data>, predictions)
+
+    # Step 3: create the mcq dataset
+    # model_names = [k for k in models.keys()]
+    # mcq_tokenizer = AutoTokenizer.from_pretrained(args.mcq_model_path)
+    # mcq_ds = MCQDataset(mcq_data, model_names, mcq_tokenizer, args.max_length)
+    # mcq_loader = DataLoader(mcq_ds, batch_size=args.batch_size, shuffle=False, collate_fn=mcq_ds.collate)
+    
+    # Step 4: load mcq model
+    # mcq_model = AutoModelForMultipleChoice.from_pretrained(args.mcq_model_path)
+
+    #Step 4: generate predictions
+    # mcq_predictions = ensemble_model_generate_predictions(mcq_model, mcq_loader, mcq_ds)
+
+
 
 

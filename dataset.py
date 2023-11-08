@@ -1,7 +1,10 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase, PaddingStrategy
 from datasets import load_dataset
+from dataclasses import dataclass
+from typing import Optional, Union
 
 
 class SQuADDataset(Dataset):
@@ -120,3 +123,49 @@ if __name__ == '__main__':
 
 
 
+class MCQDataset(Dataset):
+    def __init__(self, data, model_names, tokenizer, max_length):
+        super().__init__()
+        self.data = data
+        self.model_names = model_names
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.model_count = len(model_names)
+
+    def __getitem__(self, item):
+        example = self.data[item]
+        processed_example = self.preprocess_example(example)
+
+        return processed_example
+
+    def __len__(self):
+        return len(self.data)
+        
+    def preprocess_example(self, example):
+        context = [example["context"]] * self.model_count
+        question = example["question"]
+        qna = [f"{question} {example[ans]}" for ans in self.model_names]
+        return self.tokenizer(context, qna, truncation="only_first", max_length=self.max_length)
+    
+    def collate(self, features):
+        batch_size = len(features)
+        num_choices = len(features[0]["input_ids"])
+        flattened_features = [
+            [{k: v[i] for k, v in feature.items()} for i in range(num_choices)] for feature in features
+        ]
+        flattened_features = sum(flattened_features, [])
+        batch = self.tokenizer.pad(
+            flattened_features,
+            padding=True,
+            return_tensors="pt",
+        )
+
+        batch = {k: v.view(batch_size, num_choices, -1) for k, v in batch.items()}
+        return batch
+    
+    def decode_answer(self, pred_labels):
+        predictions = []
+        for i, l in enumerate(pred_labels):
+            m_name = self.model_names[l]
+            predictions.append(self.data[i][m_name])
+        return predictions
