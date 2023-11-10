@@ -90,6 +90,88 @@ class SQuADDataset(Dataset):
         return tokenized_input
 
 
+class MCQDataset(Dataset):
+    def __init__(self, data, model_names, tokenizer, max_length):
+        super().__init__()
+        self.data = data
+        self.model_names = model_names
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.model_count = len(model_names)
+
+    def __getitem__(self, item):
+        example = self.data[item]
+        processed_example = self.preprocess_example(example)
+
+        return processed_example
+
+    def __len__(self):
+        return len(self.data)
+
+    def preprocess_example(self, example):
+        context = [example["context"]] * self.model_count
+        question = example["question"]
+        qna = [f"{question} {example[ans]}" for ans in self.model_names]
+        return self.tokenizer(context, qna, truncation="only_first", max_length=self.max_length)
+
+    def collate(self, features):
+        batch_size = len(features)
+        num_choices = len(features[0]["input_ids"])
+        flattened_features = [
+            [{k: v[i] for k, v in feature.items()} for i in range(num_choices)] for feature in features
+        ]
+        flattened_features = sum(flattened_features, [])
+        batch = self.tokenizer.pad(
+            flattened_features,
+            padding=True,
+            return_tensors="pt",
+        )
+
+        batch = {k: v.view(batch_size, num_choices, -1) for k, v in batch.items()}
+        return batch
+
+    def decode_answer(self, pred_labels):
+        predictions = []
+        for i, l in enumerate(pred_labels):
+            m_name = self.model_names[l]
+            predictions.append(self.data[i][m_name])
+        return predictions
+
+
+@dataclass
+class DataCollatorForMultipleChoice:
+    """
+    Data collator that will dynamically pad the inputs for multiple choice received.
+    """
+
+    tokenizer: PreTrainedTokenizerBase
+    padding: Union[bool, str, PaddingStrategy] = True
+    max_length: Optional[int] = None
+    pad_to_multiple_of: Optional[int] = None
+
+    def __call__(self, features):
+        label_name = "label" if "label" in features[0].keys() else "labels"
+        labels = [feature.pop(label_name) for feature in features]
+        batch_size = len(features)
+        num_choices = len(features[0]["input_ids"])
+        flattened_features = [
+            [{k: v[i] for k, v in feature.items()} for i in range(num_choices)] for feature in features
+        ]
+        flattened_features = sum(flattened_features, [])
+
+        batch = self.tokenizer.pad(
+            flattened_features,
+            padding=self.padding,
+            max_length=self.max_length,
+            pad_to_multiple_of=self.pad_to_multiple_of,
+            return_tensors="pt",
+        )
+
+        batch = {k: v.view(batch_size, num_choices, -1) for k, v in batch.items()}
+        batch["labels"] = torch.tensor(labels, dtype=torch.int64)
+        return batch
+
+
 def check_answer_mapping(tokenizer, input_ids, start_position, end_position):
     answer_ids = input_ids[start_position: end_position + 1]
     return tokenizer.decode(answer_ids, skip_special_tokens=True)
@@ -119,53 +201,3 @@ if __name__ == '__main__':
                                                sample_batch['bert-base']['end_positions'][i])
         print("Mapped answer: ", decoded_mapping)
         print("True answer: ", sample_batch['bert-base']['answer_text'][0][i])
-
-
-
-
-class MCQDataset(Dataset):
-    def __init__(self, data, model_names, tokenizer, max_length):
-        super().__init__()
-        self.data = data
-        self.model_names = model_names
-        self.tokenizer = tokenizer
-        self.max_length = max_length
-        self.model_count = len(model_names)
-
-    def __getitem__(self, item):
-        example = self.data[item]
-        processed_example = self.preprocess_example(example)
-
-        return processed_example
-
-    def __len__(self):
-        return len(self.data)
-        
-    def preprocess_example(self, example):
-        context = [example["context"]] * self.model_count
-        question = example["question"]
-        qna = [f"{question} {example[ans]}" for ans in self.model_names]
-        return self.tokenizer(context, qna, truncation="only_first", max_length=self.max_length)
-    
-    def collate(self, features):
-        batch_size = len(features)
-        num_choices = len(features[0]["input_ids"])
-        flattened_features = [
-            [{k: v[i] for k, v in feature.items()} for i in range(num_choices)] for feature in features
-        ]
-        flattened_features = sum(flattened_features, [])
-        batch = self.tokenizer.pad(
-            flattened_features,
-            padding=True,
-            return_tensors="pt",
-        )
-
-        batch = {k: v.view(batch_size, num_choices, -1) for k, v in batch.items()}
-        return batch
-    
-    def decode_answer(self, pred_labels):
-        predictions = []
-        for i, l in enumerate(pred_labels):
-            m_name = self.model_names[l]
-            predictions.append(self.data[i][m_name])
-        return predictions
