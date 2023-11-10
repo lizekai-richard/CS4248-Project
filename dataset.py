@@ -1,4 +1,5 @@
 import torch
+import random
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase, PaddingStrategy
@@ -175,6 +176,37 @@ class DataCollatorForMultipleChoice:
 def check_answer_mapping(tokenizer, input_ids, start_position, end_position):
     answer_ids = input_ids[start_position: end_position + 1]
     return tokenizer.decode(answer_ids, skip_special_tokens=True)
+
+#wrong_answers is a dict of lists. correct_answers is a list, seed for reproducibility of answer shuffling
+def preprocess_dataset_for_training_qna(dataset, wrong_answers, tokenizer, seed=0):
+    random.seed(seed)
+    correct_answers = [x['text'][0] for x in dataset['answers']]
+    for k,v in wrong_answers.items():
+        dataset = dataset.add_column(k, v)
+    dataset = dataset.add_column("correct_answer", correct_answers)
+
+    labels = [random.randint(0, len(wrong_answers)) for _ in correct_answers] 
+    dataset = dataset.add_column("labels", labels)
+
+    ans_names = ["correct_answer"].extend(wrong_answers.keys())
+    
+    def pf(examples):
+        context = [[c] * 3 for c in examples["context"]]
+        question = examples["question"]
+        labels = examples["label"]
+        qna = [
+            [f"{q} {examples[ans][i]}" for ans in ans_names] for i, q in enumerate(question)
+        ]
+        for i, q in enumerate(qna):
+            label = labels[i]
+            q[0], q[label] = q[label], q[0]
+        context = sum(context, [])
+        qna = sum(qna, [])
+
+        tokenized_examples = tokenizer(context, qna, truncation="only_first")
+        return {k: [v[i : i + 3] for i in range(0, len(v), 3)] for k, v in tokenized_examples.items()}
+    
+    return dataset.map(pf, batched=True)
 
 
 if __name__ == '__main__':
