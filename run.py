@@ -5,6 +5,7 @@ import torch
 import json
 import argparse
 from tqdm import tqdm
+from datasets import load_dataset
 from dataset import SQuADDataset, MCQDataset, DataCollatorForMultipleChoice, preprocess_dataset_for_training_qna
 from datasets import Dataset
 from torch.utils.data import DataLoader
@@ -129,32 +130,23 @@ if __name__ == '__main__':
     }
 
     mcq_tokenizer = AutoTokenizer.from_pretrained(args.mcq_model_path)
+    mcq_model = AutoModelForMultipleChoice.from_pretrained(args.mcq_model_path)
 
-    # Step 1: generate predictions for single models:
+    print("Generating single model predictions on the train dataset...")
     single_model_predictions_on_train_data = single_model_generate_predictions(tokenizers, models,
                                                                                train_loader)
-
+    print("Generating single model predictions on the dev dataset...")
     single_model_predictions_on_dev_data = single_model_generate_predictions(tokenizers, models,
                                                                              dev_loader)
 
-    # Step 2: add the predictions to the corresponding dataset:
-    # training is handled differently from eval due to need of labels and usage of end to end trainer
-    train_dataset = Dataset.from_dict(train_data)
-    train_mcq_ds = preprocess_dataset_for_training_qna(train_data, single_model_predictions_on_train_data, mcq_tokenizer)
-    val_dataset = Dataset.from_dict(dev_data)
-    val_mcq_ds = preprocess_dataset_for_training_qna(dev_data, single_model_predictions_on_dev_data, mcq_tokenizer)
-
-    eval_mcq_data = add_predictions_to_dataset(dev_data, single_model_predictions_on_dev_data)
-
-    # Step 3: create the mcq dataset for prediction
-    eval_mcq_ds = MCQDataset(eval_mcq_data, models.keys(), mcq_tokenizer, args.max_length, training=False)
-    eval_mcq_loader = DataLoader(eval_mcq_ds, batch_size=args.batch_size, shuffle=False,
-                                collate_fn=eval_mcq_ds.collate)
-    
-    # Step 4: load mcq model
-    mcq_model = AutoModelForMultipleChoice.from_pretrained(args.mcq_model_path)
-
     if args.do_train:
+
+        squad = load_dataset("squad")
+        train_mcq_ds = preprocess_dataset_for_training_qna(squad['train'], single_model_predictions_on_train_data,
+                                                           mcq_tokenizer)
+        dev_mcq_ds = preprocess_dataset_for_training_qna(squad['validation'], single_model_predictions_on_dev_data,
+                                                         mcq_tokenizer)
+
         training_args = TrainingArguments(
             output_dir="squad_qna_model",
             evaluation_strategy="steps",
@@ -175,14 +167,19 @@ if __name__ == '__main__':
             model=mcq_model,
             args=training_args,
             train_dataset=train_mcq_ds,
-            eval_dataset=val_mcq_ds,
+            eval_dataset=dev_mcq_ds,
             tokenizer=mcq_tokenizer,
             data_collator=DataCollatorForMultipleChoice(tokenizer=mcq_tokenizer),
         )
 
         trainer.train()
     else:
+        eval_mcq_data = add_predictions_to_dataset(dev_data, single_model_predictions_on_dev_data)
 
+        # Step 3: create the mcq dataset for prediction
+        eval_mcq_ds = MCQDataset(eval_mcq_data, models.keys(), mcq_tokenizer, args.max_length)
+        eval_mcq_loader = DataLoader(eval_mcq_ds, batch_size=args.batch_size, shuffle=False,
+                                     collate_fn=eval_mcq_ds.collate)
         # Step 4: generate predictions
         mcq_predictions = ensemble_model_generate_predictions(mcq_model, eval_mcq_loader, eval_mcq_ds)
 

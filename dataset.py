@@ -177,7 +177,8 @@ def check_answer_mapping(tokenizer, input_ids, start_position, end_position):
     answer_ids = input_ids[start_position: end_position + 1]
     return tokenizer.decode(answer_ids, skip_special_tokens=True)
 
-#wrong_answers is a dict of lists. correct_answers is a list, seed for reproducibility of answer shuffling
+
+# wrong_answers is a dict of lists. correct_answers is a list, seed for reproducibility of answer shuffling
 def preprocess_dataset_for_training_qna(dataset, wrong_answers, tokenizer, seed=0):
     random.seed(seed)
     correct_answers = [x['text'][0] for x in dataset['answers']]
