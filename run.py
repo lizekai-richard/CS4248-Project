@@ -7,7 +7,6 @@ import argparse
 from tqdm import tqdm
 from datasets import load_dataset
 from dataset import SQuADDataset, MCQDataset, DataCollatorForMultipleChoice, preprocess_dataset_for_training_qna
-from datasets import Dataset
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AutoModelForMultipleChoice, TrainingArguments, \
     Trainer
@@ -140,7 +139,8 @@ if __name__ == '__main__':
                                                                              dev_loader)
 
     if args.do_train:
-
+        print("For convenience of format consistency, we use dataset on huggingface to do the training. "
+              "But the evaluation is conducted on the given dataset")
         squad = load_dataset("squad")
         train_mcq_ds = preprocess_dataset_for_training_qna(squad['train'], single_model_predictions_on_train_data,
                                                            mcq_tokenizer)
