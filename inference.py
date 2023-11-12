@@ -117,7 +117,7 @@ def collator(batch):
     
     return qids, r, torch.tensor(starts), torch.tensor(ends)
 
-dtest = SentDataset("./dev-v1.1.json")
+dtest = SentDataset("data/dev-v1.1.json")
 
 
 

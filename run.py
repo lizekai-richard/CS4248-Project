@@ -9,7 +9,7 @@ from datasets import load_dataset
 from dataset import SQuADDataset, MCQDataset, DataCollatorForMultipleChoice, preprocess_dataset_for_training_qna
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AutoModelForMultipleChoice, TrainingArguments, \
-    Trainer
+    Trainer, pipeline
 
 
 def reformat_dataset(data):

@@ -113,7 +113,7 @@ class MCQDataset(Dataset):
         context = [example["context"]] * self.model_count
         question = example["question"]
         qna = [f"{question} {example[ans]}" for ans in self.model_names]
-        return self.tokenizer(context, qna, truncation="only_first", max_length=self.max_length)
+        return self.tokenizer(context, qna, truncation=True, max_length=self.max_length)
 
     def collate(self, features):
         batch_size = len(features)
