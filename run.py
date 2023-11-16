@@ -105,7 +105,7 @@ def collate_fn(batch):
 
     for model_name in model_names:
         new_batch[model_name]["start_positions"] = torch.tensor(new_batch[model_name]["start_positions"])
-        new_batch[model_name]["end_positions"] = torch.tensor(new_batch[model_name]["start_positions"])
+        new_batch[model_name]["end_positions"] = torch.tensor(new_batch[model_name]["end_positions"])
         new_batch[model_name]["input_ids"] = torch.stack(new_batch[model_name]["input_ids"])
         new_batch[model_name]["attention_mask"] = torch.stack(new_batch[model_name]["attention_mask"])
     return new_batch
