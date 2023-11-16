@@ -187,7 +187,7 @@ def preprocess_dataset_for_training_qna(dataset, wrong_answers, tokenizer, seed=
     dataset = dataset.add_column("correct_answer", correct_answers)
 
     labels = [random.randint(0, len(wrong_answers)) for _ in correct_answers] 
-    dataset = dataset.add_column("labels", labels)
+    dataset = dataset.add_column("label", labels)
 
     ans_names = ["correct_answer"].extend(wrong_answers.keys())
     
