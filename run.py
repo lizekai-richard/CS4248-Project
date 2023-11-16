@@ -59,8 +59,11 @@ def single_model_generate_predictions(tokenizers, models, data_loader):
             tokenizer = tokenizers[model_name]
             model = models[model_name]
 
-            input_ids, attention_mask = batch[model]['input_ids'], batch[model]['attention_mask']
-            input_ids, attention_mask = input_ids.cuda(), attention_mask.cuda()
+            input_ids, attention_mask = batch[model_name]['input_ids'], batch[model_name]['attention_mask']
+
+            if torch.cuda.is_available():
+                input_ids, attention_mask = input_ids.cuda(), attention_mask.cuda()
+                model.to('cuda')
             # ans_starts, ans_ends = batch[model]['start_positions'], batch[model]['end_positions']
 
             outputs = model(input_ids, attention_mask)
