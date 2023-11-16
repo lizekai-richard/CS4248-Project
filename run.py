@@ -168,7 +168,7 @@ if __name__ == '__main__':
             per_device_eval_batch_size=4,
             num_train_epochs=1,
             weight_decay=0.01,
-            push_to_hub=True,
+            push_to_hub=False,  # if you want to push to huggingface, please login first and change tis value to Trues
             prediction_loss_only=True
         )
 
