@@ -65,8 +65,8 @@ def single_model_generate_predictions(tokenizers, models, data_loader):
 
             outputs = model(input_ids, attention_mask)
 
-            pred_starts = outputs.start_logits.argmax()
-            pred_ends = outputs.end_logits.argmax()
+            pred_starts = outputs.start_logits.argmax(dim=-1)
+            pred_ends = outputs.end_logits.argmax(dim=-1)
 
             for i, (s, e) in enumerate(zip(pred_starts, pred_ends)):
                 pred_answer = tokenizer.decode(input_ids[i][s: e + 1], skip_special_tokens=True)
