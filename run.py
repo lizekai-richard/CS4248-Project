@@ -130,14 +130,18 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
     dev_loader = DataLoader(dev_ds, batch_size=args.batch_size, shuffle=False)
 
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
     models = {
-        'deberta': AutoModelForQuestionAnswering.from_pretrained(args.deberta_path, device_map='auto'),
-        'albert': AutoModelForQuestionAnswering.from_pretrained(args.albert_path, device_map='auto'),
-        'electra': AutoModelForQuestionAnswering.from_pretrained(args.electra_path, device_map='auto')
+        'deberta': AutoModelForQuestionAnswering.from_pretrained(args.deberta_path).to(device),
+        'albert': AutoModelForQuestionAnswering.from_pretrained(args.albert_path).to(device),
+        'electra': AutoModelForQuestionAnswering.from_pretrained(args.electra_path).to(device)
     }
 
     mcq_tokenizer = AutoTokenizer.from_pretrained(args.mcq_model_path)
-    mcq_model = AutoModelForMultipleChoice.from_pretrained(args.mcq_model_path, device_map='auto')
+    mcq_model = AutoModelForMultipleChoice.from_pretrained(args.mcq_model_path).to(device)
 
     if args.do_train:
         print("For convenience of format consistency, we use dataset on huggingface to do the training. "
