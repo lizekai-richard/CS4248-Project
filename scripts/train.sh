@@ -7,7 +7,7 @@ MCQ_MODEL_PATH="distilbert-base-uncased"
 OUTPUT_PATH="ensemble_mcq_model"
 
 python3 run.py \
---do_train True \
+--do_train \
 --output_path $OUTPUT_PATH \
 --train_data_path $TRAIN_DATA_PATH \
 --dev_data_path $DEV_DATA_PATH \

@@ -2,3 +2,5 @@
 /data/
 __pycache__/
 .fresh/
+distilbert-base-uncased/
+ensemble_mcq_model/

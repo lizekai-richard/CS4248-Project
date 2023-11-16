@@ -7,7 +7,6 @@ MCQ_MODEL_PATH="ensemble_mcq_model"
 SAVE_PATH="ensemble_pred.json"
 
 python3 run.py \
---do_train False \
 --save_path $SAVE_PATH \
 --train_data_path $TRAIN_DATA_PATH \
 --dev_data_path $DEV_DATA_PATH \

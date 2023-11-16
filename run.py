@@ -113,7 +113,7 @@ def collate_fn(batch):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--do_train", type=bool, default=True)
+    parser.add_argument("--do_train", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--save_path", type=str, default="/path/to/save")
     parser.add_argument("--output_path", type=str, default="/path/to/output")
     parser.add_argument("--train_data_path", type=str, default="/path/to/train/data")
@@ -206,6 +206,7 @@ if __name__ == '__main__':
         )
 
         trainer.train()
+        trainer.save_model(args.output_path)
     else:
         print("Generating single model predictions on the dev dataset...")
         single_model_predictions_on_dev_data = single_model_generate_predictions(tokenizers, models,
@@ -213,7 +214,7 @@ if __name__ == '__main__':
         eval_mcq_data = add_predictions_to_dataset(dev_data, single_model_predictions_on_dev_data)
 
         # Step 3: create the mcq dataset for prediction
-        eval_mcq_ds = MCQDataset(eval_mcq_data, models.keys(), mcq_tokenizer, args.max_length)
+        eval_mcq_ds = MCQDataset(eval_mcq_data, list(models.keys()), mcq_tokenizer, args.max_length)
         eval_mcq_loader = DataLoader(eval_mcq_ds, batch_size=args.batch_size, shuffle=False,
                                      collate_fn=eval_mcq_ds.collate)
         # Step 4: generate predictions
