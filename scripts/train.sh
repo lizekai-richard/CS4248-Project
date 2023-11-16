@@ -1,5 +1,5 @@
-TRAIN_DATA_PATH="./train-v1.1.json"
-DEV_DATA_PATH="./dev-v1.1.json"
+TRAIN_DATA_PATH="./data/train-v1.1.json"
+DEV_DATA_PATH="./data/dev-v1.1.json"
 ALBERT_PATH="twmkn9/albert-base-v2-squad2"
 DEBERTA_PATH="deepset/deberta-v3-base-squad2"
 ELECTRA_PATH="deepset/electra-base-squad2"
