@@ -187,12 +187,13 @@ def preprocess_dataset_for_training_qna(dataset, wrong_answers, tokenizer, seed=
     dataset = dataset.add_column("correct_answer", correct_answers)
 
     labels = [random.randint(0, len(wrong_answers)) for _ in correct_answers] 
-    dataset = dataset.add_column("labels", labels)
+    dataset = dataset.add_column("label", labels)
 
-    ans_names = ["correct_answer"].extend(wrong_answers.keys())
+    ans_names = ["correct_answer"]
+    ans_names.extend(wrong_answers.keys())
     
     def pf(examples):
-        context = [[c] * 3 for c in examples["context"]]
+        context = [[c] * 4 for c in examples["context"]]
         question = examples["question"]
         labels = examples["label"]
         qna = [
@@ -205,7 +206,7 @@ def preprocess_dataset_for_training_qna(dataset, wrong_answers, tokenizer, seed=
         qna = sum(qna, [])
 
         tokenized_examples = tokenizer(context, qna, truncation="only_first")
-        return {k: [v[i : i + 3] for i in range(0, len(v), 3)] for k, v in tokenized_examples.items()}
+        return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
     
     return dataset.map(pf, batched=True)
 
