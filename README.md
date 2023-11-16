@@ -4,7 +4,7 @@
 
 To run the project, perform the following steps to install all required dependencies
 
-1. Run `pip install -r requirements.txt`
+1. Run `pip install -r project-requirements.txt`
 2. Download and place the files `dev-v1.1.json` and `train-v1.1.json` in a folder called `data/`. The folder structure should look like the diagram below.
 3. Ensure you are in the main folder `CS4248-Project/` before running the shell scripts.
 
@@ -19,6 +19,7 @@ CS4248-Project/
 │  ├─ eval.sh
 │  ├─ train.sh
 ├─ requirements.txt
+├─ project-requirements.txt
 ├─ run.py
 ├─ README.md
 ├─ ...
