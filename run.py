@@ -90,6 +90,26 @@ def ensemble_model_generate_predictions(model, data_loader, dataset):
 
     return dataset.decode_answer(prediction_labels)
 
+def collate_fn(batch):
+    model_names = list(batch[0].keys())
+    entry_names = list(batch[0][model_names[0]].keys())
+    new_batch = {model_name: {} for model_name in model_names}
+    for model_name in model_names:
+        for example in batch:
+            for key in entry_names:
+                if key == 'token_type_ids':
+                    continue
+                if key not in new_batch[model_name]:
+                    new_batch[model_name][key] = []
+                new_batch[model_name][key].append(example[model_name][key])
+
+    for model_name in model_names:
+        new_batch[model_name]["start_positions"] = torch.tensor(new_batch[model_name]["start_positions"])
+        new_batch[model_name]["end_positions"] = torch.tensor(new_batch[model_name]["start_positions"])
+        new_batch[model_name]["input_ids"] = torch.stack(new_batch[model_name]["input_ids"])
+        new_batch[model_name]["attention_mask"] = torch.stack(new_batch[model_name]["attention_mask"])
+    return new_batch
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -127,8 +147,8 @@ if __name__ == '__main__':
     train_ds = SQuADDataset(train_data, tokenizers, args.max_length)
     dev_ds = SQuADDataset(dev_data, tokenizers, args.max_length)
 
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
-    dev_loader = DataLoader(dev_ds, batch_size=args.batch_size, shuffle=False)
+    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn)
+    dev_loader = DataLoader(dev_ds, batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn)
 
     if torch.cuda.is_available():
         device = torch.device("cuda")
