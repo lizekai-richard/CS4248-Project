@@ -4,6 +4,7 @@
 
 To run the project, perform the following steps to install all required dependencies
 
+0. This project was tested on Python version 3.11.6
 1. Run `pip install -r project-requirements.txt`
 2. Download and place the files `dev-v1.1.json` and `train-v1.1.json` in a folder called `data/`. The folder structure should look like the diagram below.
 3. Ensure you are in the main folder `CS4248-Project/` before running the shell scripts.
