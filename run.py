@@ -63,7 +63,6 @@ def single_model_generate_predictions(tokenizers, models, data_loader):
 
             if torch.cuda.is_available():
                 input_ids, attention_mask = input_ids.cuda(), attention_mask.cuda()
-                model.to('cuda')
             # ans_starts, ans_ends = batch[model]['start_positions'], batch[model]['end_positions']
 
             outputs = model(input_ids, attention_mask)
@@ -132,13 +131,13 @@ if __name__ == '__main__':
     dev_loader = DataLoader(dev_ds, batch_size=args.batch_size, shuffle=False)
 
     models = {
-        'deberta': AutoModelForQuestionAnswering.from_pretrained(args.deberta_path),
-        'albert': AutoModelForQuestionAnswering.from_pretrained(args.albert_path),
-        'electra': AutoModelForQuestionAnswering.from_pretrained(args.electra_path)
+        'deberta': AutoModelForQuestionAnswering.from_pretrained(args.deberta_path, device_map='auto'),
+        'albert': AutoModelForQuestionAnswering.from_pretrained(args.albert_path, device_map='auto'),
+        'electra': AutoModelForQuestionAnswering.from_pretrained(args.electra_path, device_map='auto')
     }
 
     mcq_tokenizer = AutoTokenizer.from_pretrained(args.mcq_model_path)
-    mcq_model = AutoModelForMultipleChoice.from_pretrained(args.mcq_model_path)
+    mcq_model = AutoModelForMultipleChoice.from_pretrained(args.mcq_model_path, device_map='auto')
 
     if args.do_train:
         print("For convenience of format consistency, we use dataset on huggingface to do the training. "
